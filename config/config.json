@@ -1,0 +1,33 @@
+{
+  "system": {
+    "name": "Quantum-Agentic Vessel PMS",
+    "vessel": "MV Newcastle Quantum",
+    "version": "1.0.0",
+    "imo_number": "IMO9876543"
+  },
+  "quantum": {
+    "n_loads": 6,
+    "n_qaoa_layers": 2,
+    "shots": 512,
+    "optimisation_interval_s": 5,
+    "backend": "aer_simulator"
+  },
+  "generation": {
+    "reserve_margin_pct": 15,
+    "start_delay_s": 3,
+    "stop_delay_s": 2
+  },
+  "storage": {
+    "min_soc_pct": 20,
+    "max_soc_pct": 90
+  },
+  "fault_detection": {
+    "anomaly_threshold_p": 0.60,
+    "critical_threshold_p": 0.85,
+    "history_samples": 200
+  },
+  "api": {
+    "host": "0.0.0.0",
+    "port": 5000
+  }
+}
