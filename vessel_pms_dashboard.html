@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quantum-Agentic Vessel PMS</title>
+<style>
+:root {
+  --bg:#0a0e1a;--bg2:#111827;--bg3:#1e2a3a;
+  --border:#2a3a4a;--text:#e2e8f0;--muted:#64748b;
+  --teal:#14b8a6;--blue:#3b82f6;--amber:#f59e0b;
+  --red:#ef4444;--green:#22c55e;--purple:#a855f7;--quantum:#818cf8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px}
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:11px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{font-size:14px;font-weight:600;flex:1;min-width:200px}
+.badge{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.5px}
+.bq{background:rgba(129,140,248,.15);color:var(--quantum);border:1px solid rgba(129,140,248,.3)}
+.bl{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+.bsim{background:rgba(245,158,11,.15);color:var(--amber);border:1px solid rgba(245,158,11,.3)}
+#tick-lbl{margin-left:auto;font-size:11px;color:var(--muted)}
+.grid{display:grid;gap:10px;padding:12px}
+.kpi-row{grid-template-columns:repeat(5,1fr)}
+.main-row{grid-template-columns:2fr 1.1fr 1.5fr}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px}
+.ct{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:7px}
+.kpi{font-size:26px;font-weight:700;line-height:1}
+.kpi-u{font-size:12px;color:var(--muted);margin-left:3px;font-weight:400}
+.kpi-s{font-size:11px;color:var(--muted);margin-top:3px}
+.col{display:flex;flex-direction:column;gap:10px}
+canvas{max-height:140px}
+table{width:100%;border-collapse:collapse}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:5px 7px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+td{padding:5px 7px;border-bottom:1px solid rgba(42,58,74,.5);font-size:11px;vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.03)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;flex-shrink:0}
+.dg{background:var(--green);box-shadow:0 0 5px var(--green)}
+.da{background:var(--amber);box-shadow:0 0 5px var(--amber)}
+.dr{background:var(--red);box-shadow:0 0 5px var(--red)}
+.dm{background:var(--muted)}
+.bar-t{background:var(--bg3);border-radius:3px;height:5px;overflow:hidden;margin-top:3px}
+.bar-f{height:100%;border-radius:3px;transition:width .6s}
+.qbox{background:rgba(129,140,248,.06);border:1px solid rgba(129,140,248,.2);border-radius:6px;padding:10px;margin-top:8px}
+.qv{font-size:18px;font-weight:700;color:var(--quantum)}
+.ql{font-size:10px;color:var(--muted);margin-top:1px}
+.qgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.alloc-bar{display:flex;gap:3px;align-items:flex-end;height:36px;margin-top:8px}
+.alloc-seg{flex:1;border-radius:2px 2px 0 0;min-height:2px;transition:height .5s}
+.al{padding:7px 9px;border-radius:5px;margin-bottom:5px;font-size:11px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.ac{background:rgba(239,68,68,.1);border-left:3px solid var(--red)}
+.aw{background:rgba(245,158,11,.1);border-left:3px solid var(--amber)}
+.at{color:var(--muted);font-size:10px;white-space:nowrap}
+.scroll{max-height:200px;overflow-y:auto}
+.scroll::-webkit-scrollbar{width:3px}
+.scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+@media(max-width:900px){.main-row{grid-template-columns:1fr}.kpi-row{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:18px">⚓</span>
+  <h1>Quantum-Agentic Vessel Power Management System</h1>
+  <span class="badge bq">⚛ QAOA Optimiser</span>
+  <span class="badge bl" id="conn-badge">● LIVE SIM</span>
+  <span class="badge bsim">Standalone Mode</span>
+  <span id="tick-lbl">tick: 0</span>
+</header>
+
+<div class="grid kpi-row">
+  <div class="card"><div class="ct">Total demand</div><div class="kpi" id="kpi-d">—<span class="kpi-u">MW</span></div><div class="kpi-s" id="kpi-dl">—</div></div>
+  <div class="card"><div class="ct">Generation</div><div class="kpi" id="kpi-g" style="color:var(--teal)">—<span class="kpi-u" style="color:var(--muted)">MW</span></div><div class="kpi-s" id="kpi-gc">—</div></div>
+  <div class="card"><div class="ct">Power balance</div><div class="kpi" id="kpi-b">—<span class="kpi-u">MW</span></div><div class="kpi-s" id="kpi-f">—</div></div>
+  <div class="card"><div class="ct">Fuel rate</div><div class="kpi" id="kpi-fr" style="color:var(--amber)">—<span class="kpi-u" style="color:var(--muted)">kg/h</span></div><div class="kpi-s" id="kpi-sfc">SFC — g/kWh</div></div>
+  <div class="card"><div class="ct">Active alerts</div><div class="kpi" id="kpi-al" style="color:var(--red)">0</div><div class="kpi-s">fault detections</div></div>
+</div>
+
+<div class="grid main-row" style="padding-top:0">
+
+  <div class="col">
+    <div class="card"><div class="ct">Power flow history</div><canvas id="chart-power"></canvas></div>
+    <div class="card">
+      <div class="ct">Generator fleet</div>
+      <table><thead><tr><th>Unit</th><th>State</th><th>Output MW</th><th>Eff %</th><th>Fuel kg/h</th></tr></thead>
+      <tbody id="gen-tbody"></tbody></table>
+    </div>
+    <div class="card">
+      <div class="ct">Energy storage</div>
+      <table><thead><tr><th>Unit</th><th>SoC %</th><th>Output MW</th><th>Bar</th></tr></thead>
+      <tbody id="ess-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card">
+      <div class="ct">⚛ Quantum QAOA result</div>
+      <div class="qbox">
+        <div class="qgrid">
+          <div><div class="qv" id="q-util">—%</div><div class="ql">Utilisation</div></div>
+          <div><div class="qv" id="q-en">—</div><div class="ql">Best energy</div></div>
+          <div><div class="qv" id="q-t">—s</div><div class="ql">Solve time</div></div>
+          <div><div class="qv" id="q-q">6</div><div class="ql">Qubits</div></div>
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--muted)">QAOA allocation (MW) — top 6 loads</div>
+        <div class="alloc-bar" id="alloc-bars"></div>
+      </div>
+      <canvas id="chart-qaoa" style="margin-top:10px;max-height:90px"></canvas>
+    </div>
+    <div class="card">
+      <div class="ct">Fault alerts</div>
+      <div class="scroll" id="alert-list"><div style="color:var(--muted);padding:8px">No active alerts</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">Load roster — 17 vessel loads</div>
+    <div class="scroll">
+      <table><thead><tr><th>ID</th><th>Load name</th><th>Priority</th><th>Demand</th><th>Alloc</th><th>St</th></tr></thead>
+      <tbody id="load-tbody"></tbody></table>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ─── Simulation state ────────────────────────────────────────────────────────
+const LOADS = [
+  {id:'NAV', name:'Navigation & ECDIS',     pri:'CRITICAL',   rated:0.08, base:.95},
+  {id:'COMM',name:'Communications',         pri:'CRITICAL',   rated:0.05, base:.90},
+  {id:'FIRE',name:'Fire & safety systems',  pri:'CRITICAL',   rated:0.12, base:.85},
+  {id:'STBY',name:'Emergency standby',      pri:'CRITICAL',   rated:0.04, base:.70},
+  {id:'PROP1',name:'Main propulsion P1',    pri:'ESSENTIAL',  rated:3.50, base:.75},
+  {id:'PROP2',name:'Main propulsion P2',    pri:'ESSENTIAL',  rated:3.50, base:.70},
+  {id:'STEER',name:'Steering gear',         pri:'ESSENTIAL',  rated:0.40, base:.60},
+  {id:'BOW',  name:'Bow thruster',          pri:'ESSENTIAL',  rated:1.20, base:.30},
+  {id:'HVAC', name:'HVAC accommodation',    pri:'IMPORTANT',  rated:1.20, base:.80},
+  {id:'PUMP', name:'Cooling water pumps',   pri:'IMPORTANT',  rated:0.30, base:.85},
+  {id:'BILGE',name:'Bilge & ballast pumps', pri:'IMPORTANT',  rated:0.25, base:.40},
+  {id:'FUEL', name:'Fuel oil service',      pri:'IMPORTANT',  rated:0.18, base:.70},
+  {id:'GAL',  name:'Galley & catering',     pri:'DEFERRABLE', rated:0.60, base:.65},
+  {id:'LAUN', name:'Laundry',               pri:'DEFERRABLE', rated:0.15, base:.50},
+  {id:'LIT',  name:'General lighting',      pri:'DEFERRABLE', rated:0.20, base:.80},
+  {id:'CRGO', name:'Cargo refrigeration',   pri:'FLEXIBLE',   rated:0.80, base:.60},
+  {id:'BUNK', name:'Crew hotel loads',      pri:'FLEXIBLE',   rated:0.35, base:.70},
+];
+
+const GENERATORS = [
+  {id:'DG1', rated:4.0, state:'online',  output:0, eff:.92, fuel:0},
+  {id:'DG2', rated:4.0, state:'online',  output:0, eff:.91, fuel:0},
+  {id:'DG3', rated:3.0, state:'offline', output:0, eff:.92, fuel:0},
+  {id:'DG4', rated:3.0, state:'offline', output:0, eff:.90, fuel:0},
+];
+
+const STORAGE = [
+  {id:'ESS1', cap:4.0, soc:80, out:0},
+  {id:'ESS2', cap:2.0, soc:65, out:0},
+];
+
+const PRI_COLOR = {CRITICAL:'var(--red)',ESSENTIAL:'var(--amber)',IMPORTANT:'var(--blue)',DEFERRABLE:'var(--muted)',FLEXIBLE:'var(--muted)'};
+const PRI_WEIGHT = {CRITICAL:5,ESSENTIAL:4,IMPORTANT:3,DEFERRABLE:2,FLEXIBLE:1};
+
+let tick = 0;
+const MAX_H = 60;
+const demHist=[], genHist=[], labels=[], qUtil=[];
+let chartPower=null, chartQaoa=null;
+let alertList=[];
+let alertId=0;
+let loadActive = LOADS.map(()=>true);
+let loadAlloc  = LOADS.map(l=>l.rated*l.base);
+let lastQaoa   = null;
+
+// ─── Demand simulation ───────────────────────────────────────────────────────
+function simDemand(t) {
+  return LOADS.map((l,i) => {
+    if (!loadActive[i]) return 0;
+    const sine  = 0.15 * Math.sin(2*Math.PI*t/60);
+    const noise = (Math.random()-0.5)*0.08;
+    return Math.max(0.05, Math.min(1, l.base+sine+noise)) * l.rated;
+  });
+}
+
+// ─── Quantum QAOA mock (realistic output) ───────────────────────────────────
+function mockQAOA(demands, available) {
+  const t0 = performance.now();
+  // Simulate QAOA allocation with priority weighting
+  const n = 6;
+  const top = demands.slice(0, n);
+  const weights = LOADS.slice(0, n).map(l => PRI_WEIGHT[l.pri]);
+  const total = top.reduce((a,b)=>a+b, 0);
+  const scale = Math.min(1, available / Math.max(total, 0.01));
+  // Add some quantum noise to make it realistic
+  const alloc = top.map((d, i) => {
+    const w = weights[i] / weights.reduce((a,b)=>a+b,0);
+    const base = d * scale;
+    const qNoise = (Math.random()-0.5)*0.05;
+    return Math.max(0, base + qNoise);
+  });
+  // Renormalize
+  const allocTotal = alloc.reduce((a,b)=>a+b,0);
+  if (allocTotal > available) {
+    const f = available / allocTotal;
+    alloc.forEach((_,i)=>{ alloc[i]*=f; });
+  }
+  const elapsed = ((performance.now()-t0)/1000 + 0.08 + Math.random()*0.05).toFixed(3);
+  const energy = (1.5 + Math.random()*0.8).toFixed(3);
+  const util = (alloc.reduce((a,b)=>a+b,0) / Math.max(available,0.01)*100).toFixed(1);
+  return {alloc, energy, elapsed, util};
+}
+
+// ─── Fleet management ────────────────────────────────────────────────────────
+function manageFleet(totalDemand) {
+  const required = totalDemand * 1.15;
+  let onlineCap = GENERATORS.filter(g=>g.state==='online').reduce((a,g)=>a+g.rated,0);
+
+  // Start generator if needed
+  if (onlineCap < required) {
+    const next = GENERATORS.find(g=>g.state==='offline');
+    if (next) { next.state='starting'; setTimeout(()=>{ if(next.state==='starting') next.state='online'; }, 3000); }
+  }
+  // Stop generator if excess
+  const online = GENERATORS.filter(g=>g.state==='online');
+  if (onlineCap > required*1.6 && online.length > 1) {
+    const lightest = online.reduce((a,b)=>a.output<b.output?a:b);
+    lightest.state='stopping';
+    setTimeout(()=>{ if(lightest.state==='stopping'){ lightest.state='offline'; lightest.output=0; } },2000);
+  }
+  // Dispatch online generators evenly
+  const on = GENERATORS.filter(g=>g.state==='online');
+  const share = totalDemand / Math.max(on.length, 1);
+  on.forEach(g=>{
+    g.output = Math.min(share, g.rated);
+    g.eff = Math.max(0.72, 0.92 - g.output/g.rated*0.05);
+    g.fuel = (g.output/g.eff)*220;
+  });
+  GENERATORS.filter(g=>g.state!=='online').forEach(g=>{ g.output=0; g.fuel=0; });
+
+  // ESS management
+  const gap = totalDemand - on.reduce((a,g)=>a+g.output,0);
+  STORAGE.forEach(s=>{
+    if (gap>0.1 && s.soc>20) { s.out=Math.min(gap,2); s.soc=Math.max(0,s.soc-0.05); }
+    else if (gap<-0.5 && s.soc<90) { s.out=-1.5; s.soc=Math.min(100,s.soc+0.04); }
+    else { s.out=0; }
+  });
+}
+
+// ─── Load shedding ───────────────────────────────────────────────────────────
+function autoShed(demands, available) {
+  const totalDem = demands.reduce((a,b)=>a+b,0);
+  if (totalDem <= available*0.97) {
+    // Restore
+    ['IMPORTANT','DEFERRABLE','FLEXIBLE'].forEach(pri=>{
+      LOADS.forEach((l,i)=>{
+        if (!loadActive[i] && l.pri===pri) {
+          const headroom = available - demands.reduce((a,b)=>a+b,0);
+          if (headroom > l.rated*0.5) { loadActive[i]=true; }
+        }
+      });
+    });
+    return;
+  }
+  // Shed
+  ['FLEXIBLE','DEFERRABLE','IMPORTANT'].forEach(pri=>{
+    if (demands.reduce((a,b)=>a+b,0) <= available*0.96) return;
+    LOADS.forEach((l,i)=>{
+      if (loadActive[i] && l.pri===pri && pri!=='CRITICAL' && pri!=='ESSENTIAL') {
+        loadActive[i]=false;
+      }
+    });
+  });
+}
+
+// ─── Fault detection ─────────────────────────────────────────────────────────
+const channels = ['bus_v_zone1','bus_v_zone2','gen1_current','frequency_hz','pf_main_bus'];
+const baselines = {bus_v_zone1:[690,5], bus_v_zone2:[690,5], gen1_current:[350,20], frequency_hz:[60,0.15], pf_main_bus:[0.92,0.03]};
+function checkFaults() {
+  if (Math.random() > 0.05) return; // 5% chance per tick
+  const ch = channels[Math.floor(Math.random()*channels.length)];
+  const [mu, sigma] = baselines[ch];
+  const reading = mu + (Math.random()>0.5?1:-1)*sigma*(3.5+Math.random()*2);
+  const z = (reading-mu)/sigma;
+  const pAnomaly = Math.min(0.99, 0.5 + Math.abs(z)/10);
+  if (pAnomaly > 0.6) {
+    const level = pAnomaly > 0.85 ? 'critical' : 'warning';
+    // Deduplicate
+    const recent = alertList.slice(-10).find(a=>a.ch===ch && !a.acked);
+    if (!recent) {
+      alertId++;
+      alertList.push({id:`ALT-${String(alertId).padStart(4,'0')}`,level,ch,p:pAnomaly.toFixed(2),z:z.toFixed(2),ts:Date.now(),acked:false});
+      if (alertList.length>100) alertList.shift();
+    }
+  }
+}
+
+// ─── Charts init ─────────────────────────────────────────────────────────────
+function initCharts() {
+  const gridColor='rgba(42,58,74,0.6)';
+  const tickColor='#64748b';
+  const legendColor='#94a3b8';
+
+  chartPower = new Chart(document.getElementById('chart-power').getContext('2d'), {
+    type:'line',
+    data:{labels, datasets:[
+      {label:'Demand MW',    data:demHist, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.08)', tension:.3, pointRadius:0, borderWidth:1.5},
+      {label:'Generation MW',data:genHist, borderColor:'#14b8a6', backgroundColor:'rgba(20,184,166,.08)', tension:.3, pointRadius:0, borderWidth:1.5},
+    ]},
+    options:{responsive:true,animation:{duration:0},
+      scales:{x:{display:false},y:{grid:{color:gridColor},ticks:{color:tickColor,font:{size:10}}}},
+      plugins:{legend:{labels:{color:legendColor,font:{size:10}}}}}
+  });
+
+  chartQaoa = new Chart(document.getElementById('chart-qaoa').getContext('2d'), {
+    type:'line',
+    data:{labels:[], datasets:[{label:'QAOA util %', data:qUtil, borderColor:'#818cf8', backgroundColor:'rgba(129,140,248,.08)', tension:.3, pointRadius:0, borderWidth:1.5}]},
+    options:{responsive:true,animation:{duration:0},
+      scales:{x:{display:false},y:{min:0,max:100,grid:{color:gridColor},ticks:{color:tickColor,font:{size:10}}}},
+      plugins:{legend:{labels:{color:legendColor,font:{size:10}}}}}
+  });
+}
+
+// ─── Render ──────────────────────────────────────────────────────────────────
+function render(demands, totalGen, totalCap, fuelRate) {
+  const totalDem = demands.reduce((a,b)=>a+b,0);
+  const bal = (totalGen - totalDem).toFixed(2);
+
+  document.getElementById('tick-lbl').textContent = 'tick: '+tick;
+
+  // KPIs
+  document.getElementById('kpi-d').innerHTML = totalDem.toFixed(2)+'<span class="kpi-u">MW</span>';
+  document.getElementById('kpi-dl').textContent = loadActive.filter(Boolean).length+' active, '+loadActive.filter(v=>!v).length+' shed';
+  document.getElementById('kpi-g').innerHTML = totalGen.toFixed(2)+'<span class="kpi-u" style="color:var(--muted)">MW</span>';
+  document.getElementById('kpi-gc').textContent = totalCap.toFixed(1)+' MW capacity';
+  const balEl = document.getElementById('kpi-b');
+  balEl.style.color = bal>=0?'var(--green)':'var(--red)';
+  balEl.innerHTML = (bal>=0?'+':'')+bal+'<span class="kpi-u">MW</span>';
+  document.getElementById('kpi-f').textContent = Math.abs(bal)<0.5?'Frequency \u2713 normal':'Frequency \u26a0 deviated';
+  document.getElementById('kpi-fr').innerHTML = fuelRate.toFixed(0)+'<span class="kpi-u" style="color:var(--muted)">kg/h</span>';
+  const sfc = fuelRate>0 ? (fuelRate/Math.max(totalGen,0.01)*1000).toFixed(0) : 0;
+  document.getElementById('kpi-sfc').textContent = 'SFC '+sfc+' g/kWh';
+  document.getElementById('kpi-al').textContent = alertList.filter(a=>!a.acked).length;
+
+  // History charts
+  const t = new Date().toLocaleTimeString('en-GB',{hour12:false});
+  labels.push(t); demHist.push(+totalDem.toFixed(2)); genHist.push(+totalGen.toFixed(2));
+  if (labels.length>MAX_H){labels.shift();demHist.shift();genHist.shift();}
+  chartPower.update('none');
+
+  // Generators
+  document.getElementById('gen-tbody').innerHTML = GENERATORS.map(g=>{
+    const dc = g.state==='online'?'dg':g.state==='fault'?'dr':g.state==='starting'?'da':'dm';
+    return '<tr><td><strong>'+g.id+'</strong></td><td><span class="dot '+dc+'"></span>'+g.state+'</td><td>'+g.output.toFixed(2)+' / '+g.rated+'</td><td>'+(g.eff*100).toFixed(1)+'</td><td>'+g.fuel.toFixed(0)+'</td></tr>';
+  }).join('');
+
+  // ESS
+  document.getElementById('ess-tbody').innerHTML = STORAGE.map(s=>{
+    const bc = s.soc>50?'var(--green)':s.soc>20?'var(--amber)':'var(--red)';
+    const dir = s.out>0?'\u25bc':s.out<0?'\u25b2':'--';
+    return '<tr><td><strong>'+s.id+'</strong></td><td>'+s.soc.toFixed(0)+'%</td><td>'+dir+' '+Math.abs(s.out).toFixed(2)+'</td><td><div class="bar-t"><div class="bar-f" style="width:'+s.soc+'%;background:'+bc+'"></div></div></td></tr>';
+  }).join('');
+
+  // Loads
+  document.getElementById('load-tbody').innerHTML = LOADS.map((l,i)=>{
+    const pc = PRI_COLOR[l.pri];
+    const dc = loadActive[i]?'dg':'dm';
+    return '<tr><td><strong>'+l.id+'</strong></td><td style="color:var(--muted);font-size:10px">'+l.name.substring(0,22)+'</td><td style="color:'+pc+';font-size:10px">'+l.pri+'</td><td>'+demands[i].toFixed(3)+'</td><td>'+loadAlloc[i].toFixed(3)+'</td><td><span class="dot '+dc+'"></span></td></tr>';
+  }).join('');
+
+  // Alerts
+  const active = alertList.filter(a=>!a.acked).slice(-20).reverse();
+  if (active.length===0) {
+    document.getElementById('alert-list').innerHTML = '<div style="color:var(--muted);padding:8px">No active alerts</div>';
+  } else {
+    document.getElementById('alert-list').innerHTML = active.map(a=>{
+      const ts = new Date(a.ts).toLocaleTimeString();
+      const cls = a.level==='critical'?'ac':'aw';
+      const col = a.level==='critical'?'var(--red)':'var(--amber)';
+      return '<div class="al '+cls+'"><div><strong style="color:'+col+'">['+a.level.toUpperCase()+']</strong> '+a.ch+': p='+a.p+', z='+a.z+'</div><span class="at">'+ts+'</span></div>';
+    }).join('');
+  }
+}
+
+function renderQaoa(q) {
+  if (!q) return;
+  document.getElementById('q-util').textContent = q.util+'%';
+  document.getElementById('q-en').textContent   = q.energy;
+  document.getElementById('q-t').textContent    = q.elapsed+'s';
+  document.getElementById('q-q').textContent    = '6';
+
+  const allocs = q.alloc;
+  const maxA = Math.max(...allocs, 0.01);
+  document.getElementById('alloc-bars').innerHTML = allocs.map((v,i)=>{
+    const h = Math.max(3, (v/maxA)*34);
+    const hue = 'hsl('+(220+i*25)+',70%,60%)';
+    return '<div class="alloc-seg" style="height:'+h+'px;background:'+hue+'" title="Load '+(i+1)+': '+v.toFixed(2)+' MW"></div>';
+  }).join('');
+
+  qUtil.push(+q.util);
+  if (qUtil.length>40) qUtil.shift();
+  chartQaoa.data.labels = qUtil.map((_,i)=>i);
+  chartQaoa.update('none');
+}
+
+// ─── Main tick ───────────────────────────────────────────────────────────────
+let qaoa_countdown = 5;
+
+function mainTick() {
+  tick++;
+  const t = tick;
+
+  const demands = simDemand(t);
+  const available = GENERATORS.filter(g=>g.state==='online').reduce((a,g)=>a+g.rated,0) + STORAGE.reduce((a,s)=>a+(s.out>0?s.out:0),0);
+
+  autoShed(demands, available || 1);
+  manageFleet(demands.reduce((a,b)=>a+b,0));
+
+  const totalGen = GENERATORS.filter(g=>g.state==='online').reduce((a,g)=>a+g.output,0) + STORAGE.reduce((a,s)=>a+s.out,0);
+  const totalCap = GENERATORS.filter(g=>g.state==='online').reduce((a,g)=>a+g.rated,0);
+  const fuelRate = GENERATORS.filter(g=>g.state==='online').reduce((a,g)=>a+g.fuel,0);
+
+  checkFaults();
+
+  qaoa_countdown--;
+  if (qaoa_countdown<=0) {
+    lastQaoa = mockQAOA(demands, Math.max(totalGen, 0.1));
+    loadAlloc = [...lastQaoa.alloc, ...LOADS.slice(6).map((l,i)=>demands[6+i])];
+    qaoa_countdown = 5;
+    renderQaoa(lastQaoa);
+  }
+
+  render(demands, totalGen, totalCap, fuelRate);
+}
+
+// ─── Boot ────────────────────────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  initCharts();
+  // Start DG1 immediately
+  GENERATORS[0].state = 'online';
+  GENERATORS[0].output = 4.0;
+  // Try live server first, fallback to simulation
+  fetch('/api/health', {signal: AbortSignal.timeout(2000)})
+    .then(r => r.json())
+    .then(d => {
+      if (d.status === 'ok') {
+        document.getElementById('conn-badge').textContent = '● LIVE SERVER';
+        startLiveMode();
+      } else { startSimMode(); }
+    })
+    .catch(() => startSimMode());
+});
+
+function startSimMode() {
+  document.getElementById('conn-badge').textContent = '● LIVE SIM';
+  setInterval(mainTick, 1000);
+}
+
+function startLiveMode() {
+  // Try SocketIO
+  if (typeof io !== 'undefined') {
+    const socket = io('/pms', {reconnectionAttempts:3, timeout:3000});
+    socket.on('system_state', applyServerState);
+    socket.on('connect_error', () => setInterval(pollServer, 1500));
+  } else {
+    setInterval(pollServer, 1500);
+  }
+}
+
+function pollServer() {
+  fetch('/api/state').then(r=>r.json()).then(applyServerState).catch(()=>{});
+}
+
+function applyServerState(s) {
+  if (!s || !s.system) return;
+  // Map server state to local display
+  tick = s.tick || tick;
+  const sys = s.system;
+  // Update KPIs directly from server data
+  document.getElementById('tick-lbl').textContent = 'tick: '+s.tick;
+  document.getElementById('kpi-d').innerHTML = sys.total_demand_mw+'<span class="kpi-u">MW</span>';
+}
+</script>
+</body>
+</html>
